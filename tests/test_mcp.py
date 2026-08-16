@@ -3,11 +3,16 @@
 データツール統合テストは test_server.py を参照。
 """
 
+import asyncio
 import inspect
+
+import pytest
 
 from admin_procedures.server import (
     CACHE_SCOPE,
     CACHE_TTL_MS,
+    EnvironmentTokenVerifier,
+    auth_from_env,
     fastmcp_kwargs,
     create_mcp,
     mcp,
@@ -30,6 +35,33 @@ def test_create_mcp_no_ui():
     """no_ui=True で UI リソースが登録されない。"""
     instance = create_mcp(no_ui=True)
     assert instance is not None
+
+
+def test_auth_from_env_disabled_by_default(monkeypatch):
+    monkeypatch.delenv("MCP_AUTH_TOKEN", raising=False)
+    monkeypatch.delenv("ADMIN_PROCEDURES_REQUIRE_AUTH", raising=False)
+    assert auth_from_env() is None
+
+
+def test_auth_from_env_required_without_token(monkeypatch):
+    monkeypatch.delenv("MCP_AUTH_TOKEN", raising=False)
+    monkeypatch.setenv("ADMIN_PROCEDURES_REQUIRE_AUTH", "1")
+    with pytest.raises(RuntimeError, match="MCP_AUTH_TOKEN is required"):
+        auth_from_env()
+
+
+def test_environment_token_verifier(monkeypatch):
+    token = "a" * 64
+    monkeypatch.setenv("MCP_AUTH_TOKEN", token)
+    monkeypatch.setenv("ADMIN_PROCEDURES_AUTH_CLIENT_ID", "notion-poc")
+    verifier = auth_from_env()
+    assert isinstance(verifier, EnvironmentTokenVerifier)
+
+    accepted = asyncio.run(verifier.verify_token(token))
+    rejected = asyncio.run(verifier.verify_token("b" * 64))
+    assert accepted is not None
+    assert accepted.client_id == "notion-poc"
+    assert rejected is None
 
 
 # ============================================================

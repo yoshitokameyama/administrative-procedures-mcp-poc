@@ -17,6 +17,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import secrets
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -38,6 +39,7 @@ _SUMMARIZE_URI = "ui://administrative-procedures-mcp/summarize_records"
 # fastmcp.apps / fastmcp.tools は FastMCP 3.2.0 以降と 4.x に共通の正規パス。
 # 旧 fastmcp.server.apps は 3.4 で deprecated、4.x で削除されている。
 from fastmcp.apps import AppConfig
+from fastmcp.server.auth import AccessToken, TokenVerifier
 from fastmcp.tools import ToolResult
 from mcp.types import TextContent
 
@@ -69,6 +71,48 @@ if TYPE_CHECKING:
     from fastmcp import FastMCP
 
 logger = logging.getLogger(__name__)
+
+
+class EnvironmentTokenVerifier(TokenVerifier):
+    """Validate a single Bearer token loaded from the process environment.
+
+    The token is deliberately kept out of source control and server responses.
+    This verifier is intended for a single trusted remote client such as a
+    Notion workspace connection.
+    """
+
+    def __init__(self, expected_token: str, *, client_id: str):
+        super().__init__()
+        self.expected_token = expected_token
+        self.client_id = client_id
+
+    async def verify_token(self, token: str) -> AccessToken | None:
+        if not secrets.compare_digest(token, self.expected_token):
+            return None
+        return AccessToken(
+            token=token,
+            client_id=self.client_id,
+            scopes=["read:administrative-procedures"],
+            claims={"auth_method": "environment-bearer-token"},
+        )
+
+
+def auth_from_env():
+    """Build Bearer authentication from ``MCP_AUTH_TOKEN`` when configured."""
+    token = os.environ.get("MCP_AUTH_TOKEN")
+    client_id = os.environ.get(
+        "ADMIN_PROCEDURES_AUTH_CLIENT_ID", "notion-custom-mcp"
+    )
+    require_auth = os.environ.get("ADMIN_PROCEDURES_REQUIRE_AUTH") == "1"
+    if not token:
+        if require_auth:
+            raise RuntimeError(
+                "MCP_AUTH_TOKEN is required when ADMIN_PROCEDURES_REQUIRE_AUTH=1"
+            )
+        return None
+    if len(token) < 32:
+        raise RuntimeError("MCP_AUTH_TOKEN must be at least 32 characters")
+    return EnvironmentTokenVerifier(token, client_id=client_id)
 
 
 def _build_tool_kwargs(
@@ -589,6 +633,7 @@ def create_mcp(
     _mcp = _FastMCP(
         "administrative-procedures-mcp-catalog",
         instructions=_build_instructions(),
+        auth=auth_from_env(),
         **mcp_kwargs,
     )
 

@@ -1,0 +1,15 @@
+.git
+.venv
+__pycache__
+.pytest_cache
+htmlcov
+logs
+poc
+source-data
+datasets/*/data.parquet
+datasets/*/.fetch.json
+tests
+work
+outputs
+.env
+.env.*

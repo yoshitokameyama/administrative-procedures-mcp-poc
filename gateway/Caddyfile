@@ -1,0 +1,22 @@
+{
+	auto_https off
+	admin off
+}
+
+:{$PORT:8080} {
+	@health path /health
+	handle @health {
+		respond "ok" 200
+	}
+
+	@authorized header Authorization "Bearer {$MCP_AUTH_TOKEN}"
+	handle @authorized {
+		reverse_proxy {$UPSTREAM_URL} {
+			flush_interval -1
+			header_up Host {upstream_hostport}
+			header_up X-Forwarded-Host {host}
+		}
+	}
+
+	respond "Unauthorized" 401
+}

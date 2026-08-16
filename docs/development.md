@@ -34,7 +34,7 @@ SDMX/DSD（Data Structure Definition）の考え方を参考に、メタデー�
 | `dataset.yaml` | 信頼済み入力として扱う。取得先 URL、ローカルファイルの位置を指定できるため、出所不明の YAML は読み込まない |
 | `apcli fetch` | 利用者が内容を確認した `dataset.yaml` に対して明示的に実行する。HTTPS、応答サイズ、リダイレクト等の基本的な防御は行うが、任意の設定ファイルを安全に実行するサンドボックスではない。接続先を制限したい場合は `--allowed-host` で許可ホストを指定できる |
 | stdio / CLI | ローカル利用を基本とする。OS ユーザーの権限でデータファイルを読み込む |
-| HTTP transport | サンプル本体は利用者認証・認可・レート制限・監査ログを提供しない。外部公開時はリバースプロキシ等で補う |
+| HTTP transport | 単一Bearer tokenの検証は提供する。複数利用者向けの認可・レート制限・監査ログはGateway等で補う |
 | `apcli preview` | localhost での UI 検証専用。`--unsafe-expose` は隔離された検証環境に限定し、インターネットや共有ネットワークへ公開しない |
 
 ## 2. プロジェクト構成
@@ -146,8 +146,14 @@ sequenceDiagram
 |---|---|---|
 | `ADMIN_PROCEDURES_DATA_DIR` | 未設定 | `datasets/` を含むディレクトリのパス |
 | `ADMIN_PROCEDURES_PORT` | 未設定 | 設定すると streamable HTTP transport でサーバーを起動する |
+| `PORT` | 未設定 | PaaS互換のHTTPポート。`ADMIN_PROCEDURES_PORT` が優先 |
 | `ADMIN_PROCEDURES_HOST` | `127.0.0.1` | HTTP transport のバインドアドレス（`ADMIN_PROCEDURES_PORT` 設定時のみ有効） |
 | `ADMIN_PROCEDURES_PUBLIC` | 未設定 | `1` を設定すると `ADMIN_PROCEDURES_HOST=0.0.0.0` でバインド（公開モード）。公開時はリバースプロキシの認証設定が必須 |
+| `ADMIN_PROCEDURES_TRANSPORT` | `streamable-http` | HTTP transport。`streamable-http` または `sse` |
+| `ADMIN_PROCEDURES_PATH` | transport既定 | MCPエンドポイントのパス |
+| `MCP_AUTH_TOKEN` | 未設定 | 設定すると32文字以上のBearer token認証を有効化 |
+| `ADMIN_PROCEDURES_REQUIRE_AUTH` | 未設定 | `1` の場合、Token未設定なら起動を拒否 |
+| `ADMIN_PROCEDURES_AUTH_CLIENT_ID` | `notion-custom-mcp` | 認証済み接続に付与するclient ID |
 | `MCP_NO_UI` | 未設定 | `1` を設定すると MCP Apps UI を無効化する |
 
 ### 4.2 Python ランタイム

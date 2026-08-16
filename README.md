@@ -164,7 +164,11 @@ fastmcp run -m admin_procedures --transport streamable-http --port 8000
 または環境変数で指定：
 
 ```bash
-ADMIN_PROCEDURES_PORT=8000 python -m admin_procedures
+MCP_AUTH_TOKEN='<32文字以上のランダム値>' \
+ADMIN_PROCEDURES_REQUIRE_AUTH=1 \
+ADMIN_PROCEDURES_PORT=8000 \
+ADMIN_PROCEDURES_HOST=0.0.0.0 \
+python -m admin_procedures
 ```
 
 > **既定では `127.0.0.1` のみにバインドされ、外部からは到達できません。** 同一ホスト上のリバースプロキシ（nginx 等）で HTTPS 終端してこのポートへ転送する構成であれば、このままで問題ありません。
@@ -173,9 +177,11 @@ ADMIN_PROCEDURES_PORT=8000 python -m admin_procedures
 > - `fastmcp run` 経由: `--host 0.0.0.0` を追加
 > - `python -m admin_procedures` 経由: 環境変数 `ADMIN_PROCEDURES_HOST=0.0.0.0`（または `ADMIN_PROCEDURES_PUBLIC=1`）を設定
 >
-> 外部公開する場合は認証・レート制限を備えたリバースプロキシを前段に配置してください（詳細は[利用に際しての注意事項](#利用に際しての注意事項)を参照）。
+> `MCP_AUTH_TOKEN` を設定するとBearer token認証が有効になります。外部公開時は `ADMIN_PROCEDURES_REQUIRE_AUTH=1` も設定し、Token未設定での起動を拒否してください。複数利用者向けの本番運用では、レート制限・利用者別認可・監査ログを備えたGatewayも前段に配置してください。
 
 クライアント側でサーバーURL（`https://<your-domain>/mcp`）を登録してください。
+
+Sliplane、Docker Compose、AWS移行を想定した単一利用者向け構成は[リモートホスティング手順](docs/deployment/remote-hosting.md)を参照してください。
 
 ## ツール
 
@@ -256,7 +262,7 @@ AI エージェント向けに、リポジトリのドキュメント一覧を [
 このリポジトリは、公開データを使って MCP による検索・集計と MCP Apps の表示を試すための、ローカルまたは単一利用者向けの実験用サンプルです。複数利用者を収容する本番サービスや、基盤としての運用は対象としていません。
 
 - CLI、stdio、`apcli preview` はローカルでの試用を基本とします。プレビューは既定で `127.0.0.1` のみにバインドされます。
-- **本番環境に展開する場合**：HTTP transport 自体には利用者認証、認可、レート制限、監査ログなどを実装していません。外部から到達可能にする場合は、認証と通信制限を備えたリバースプロキシ等を前段に配置してください。
+- **外部公開する場合**：単一Bearer tokenの検証は利用できますが、複数利用者向けの認可、レート制限、監査ログは提供しません。機密情報や書き込み操作を扱う場合はOAuth対応Gateway等を前段に配置してください。
 - `dataset.yaml` は信頼済みの設定ファイルとして扱います。出所不明の YAML に対して `apcli fetch` や `apcli add` を実行しないでください。
 
 実装上の信頼境界と公開時の考慮事項は、[開発ガイド](docs/development.md#11-適用範囲と信頼境界)を参照してください。
