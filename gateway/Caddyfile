@@ -3,7 +3,7 @@
 	admin off
 }
 
-:{$PORT:8080} {
+:{$PORT:80} {
 	@health path /health
 	handle @health {
 		respond "ok" 200
