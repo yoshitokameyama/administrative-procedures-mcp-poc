@@ -9,12 +9,35 @@
 		respond "ok" 200
 	}
 
-	@authorized header Authorization "Bearer {$MCP_AUTH_TOKEN}"
-	handle @authorized {
+	# Keep the original token working for the existing company Notion
+	# connection, while issuing separate revocable tokens for household users.
+	@legacy header Authorization "Bearer {$MCP_AUTH_TOKEN}"
+	handle @legacy {
 		reverse_proxy {$UPSTREAM_URL} {
 			flush_interval -1
 			header_up Host {upstream_hostport}
 			header_up X-Forwarded-Host {host}
+			header_up Authorization "Bearer {$MCP_AUTH_TOKEN}"
+		}
+	}
+
+	@kameyama_home header Authorization "Bearer {$MCP_AUTH_TOKEN_KAMEYAMA_HOME}"
+	handle @kameyama_home {
+		reverse_proxy {$UPSTREAM_URL} {
+			flush_interval -1
+			header_up Host {upstream_hostport}
+			header_up X-Forwarded-Host {host}
+			header_up Authorization "Bearer {$MCP_AUTH_TOKEN}"
+		}
+	}
+
+	@wife_home header Authorization "Bearer {$MCP_AUTH_TOKEN_WIFE_HOME}"
+	handle @wife_home {
+		reverse_proxy {$UPSTREAM_URL} {
+			flush_interval -1
+			header_up Host {upstream_hostport}
+			header_up X-Forwarded-Host {host}
+			header_up Authorization "Bearer {$MCP_AUTH_TOKEN}"
 		}
 	}
 
