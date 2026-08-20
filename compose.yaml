@@ -7,6 +7,9 @@ services:
       dockerfile: gateway/Dockerfile
     environment:
       MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:?MCP_AUTH_TOKEN is required}
+      MCP_AUTH_TOKEN_CODEX: ${MCP_AUTH_TOKEN_CODEX:?MCP_AUTH_TOKEN_CODEX is required}
+      MCP_AUTH_TOKEN_KAMEYAMA_HOME: ${MCP_AUTH_TOKEN_KAMEYAMA_HOME:?MCP_AUTH_TOKEN_KAMEYAMA_HOME is required}
+      MCP_AUTH_TOKEN_WIFE_HOME: ${MCP_AUTH_TOKEN_WIFE_HOME:?MCP_AUTH_TOKEN_WIFE_HOME is required}
       PORT: "8080"
       UPSTREAM_URL: http://mcp-server:8000
     ports:
