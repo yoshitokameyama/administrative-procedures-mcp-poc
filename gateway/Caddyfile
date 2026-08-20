@@ -41,5 +41,15 @@
 		}
 	}
 
+	@codex header Authorization "Bearer {$MCP_AUTH_TOKEN_CODEX}"
+	handle @codex {
+		reverse_proxy {$UPSTREAM_URL} {
+			flush_interval -1
+			header_up Host {upstream_hostport}
+			header_up X-Forwarded-Host {host}
+			header_up Authorization "Bearer {$MCP_AUTH_TOKEN}"
+		}
+	}
+
 	respond "Unauthorized" 401
 }
